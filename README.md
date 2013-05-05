@@ -8,4 +8,4 @@ matplotlib
 
 [http://matplotlib.org](http://matplotlib.org)
 
-![](https://github.com/lancetw/WSN-medical-services/blob/master/sample.png)
+![](http://i.imgur.com/LpT6poS.png)
