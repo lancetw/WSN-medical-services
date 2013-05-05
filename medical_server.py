@@ -81,7 +81,7 @@ SK = list()
 for w in range(n['floors']):
 	s = 0
 	_GK = P.pop()
-	GK.insert( w, _GK)
+	GK.insert( w, _GK )
 	SK.insert( w, H(XOR(GK[w], R[s])) )
 	# 印出過程
 	#print 'SK[%d] = H(%s ⊕ %s)' % (w, _GK, R[s])
