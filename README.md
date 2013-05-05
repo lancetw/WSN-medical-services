@@ -7,3 +7,5 @@ Python 2.7
 matplotlib
 
 [http://matplotlib.org](http://matplotlib.org)
+
+![](https://github.com/lancetw/WSN-medical-services/blob/master/sample.png)
