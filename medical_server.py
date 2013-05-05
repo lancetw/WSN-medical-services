@@ -172,8 +172,10 @@ def main():
 		print '病患入院無線感測節點配置階段 - 花費時間：%f 秒' % time_test['WSN_setup_phase']
 
 	def run():
-		scope = input("請輸入金鑰數上限，例如 3000：")
-		key_n = input("請輸入每次產生幾組金鑰，例如 300：")
+		scope = input("請輸入目標金鑰數上限，例如 3000：")
+		key_n = input("請輸入每回產生幾組金鑰，例如 500：")
+		floor_n = input("請輸入醫療大樓樓層總數（固定），例如 10：")
+		wsn_n = input("請輸入無線感測節點總數（固定），例如 1000：")
 		
 		print "請耐心等待，圖片產生中..."
 		
@@ -187,7 +189,7 @@ def main():
 		
 		for i in range(1, max_run):
 			x = spacing * i
-			ans = run_once(7, x, 1000)
+			ans = run_once(floor_n, x, wsn_n)
 			y = ans['key_server_gen_key_phase']
 			chart_data_x.append(x)
 			chart_data_y.append(y) 
@@ -198,8 +200,8 @@ def main():
 		from matplotlib import rcParams
 		rcParams['font.family'] = 'Microsoft JhengHei'
 		
-		plt.figure(figsize=(8,4))
-		plt.plot(chart_data_x, chart_data_y, label=u"金鑰產生效率", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.figure(figsize=(8,5))
+		plt.plot(chart_data_x, chart_data_y, label=u"金鑰產生效能", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
 		plt.title(u"時間")
