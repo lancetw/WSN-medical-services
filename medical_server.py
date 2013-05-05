@@ -89,9 +89,9 @@ for w in range(n['floors']):
 	
 # 以金鑰鍊產生獨一無二的子金鑰，配發給每個無線感測節點
 # SKI 紀錄每層樓各自的子金鑰表（子金鑰用來加密生理資訊）
-SKI = []
+SKI = list()
 for w in range(n['floors']):
-	sub_SK = []
+	sub_SK = list()
 	i = n['wsns'][w]
 	n_keys = n['keys'] - 1
 	_SK = H(XOR(SK[w], R[n_keys]))
@@ -113,9 +113,9 @@ time_test['key_server_gen_key_phase'] = (time_end - time_start)
 time_start = time.time()
 
 # PKIW 為會議金鑰，用來進行金鑰更換時使用，PKIW[i][w], i: 第 i 個感測節點, w: 樓層
-PKIW = []
+PKIW = list()
 for w in range(n['floors']):
-	sub_PK = []
+	sub_PK = list()
 	for i in range(n['wsns'][w]):
 		_PK = H(SID[i] + FSinkID[w] + K_admin)
 		sub_PK.append( _PK )
