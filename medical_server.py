@@ -27,6 +27,7 @@ def gen_node_id():
 		random.randint(0x00, 0xff) ]
 	return ':'.join(map(lambda x: "%02x" % x, mac))
 
+# n: 隨機數數量, total: 隨機數的總和
 def rand_num_list(n, total):
 	dividers = sorted(random.sample(xrange(1, total), n - 1))
 	return [a - b for a, b in zip(dividers + [total], [0] + dividers)]
