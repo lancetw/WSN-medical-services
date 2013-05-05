@@ -178,7 +178,7 @@ def main():
 		print "請耐心等待，圖片產生中..."
 		
 		# 跑幾次
-		max_run = scope / key_n
+		max_run = (scope / key_n) + 1
 		# 區間間隔多少
 		spacing = key_n
 		
@@ -195,14 +195,16 @@ def main():
 		# 畫圖表
 		import numpy as np
 		import matplotlib.pyplot as plt
-
+		from matplotlib import rcParams
+		rcParams['font.family'] = 'Microsoft JhengHei'
+		
 		plt.figure(figsize=(8,4))
-		plt.plot(chart_data_x, chart_data_y, label="$time$", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"初始金鑰數（個）", fontproperties='Microsoft JhengHei')
-		plt.ylabel(u"花費時間（秒）", fontproperties='Microsoft JhengHei')
-		plt.title(u"時間", fontproperties='Microsoft JhengHei')
+		plt.plot(chart_data_x, chart_data_y, label=u"金鑰產生效率", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"初始金鑰數（個）")
+		plt.ylabel(u"花費時間（秒）")
+		plt.title(u"時間")
 		plt.ylim(0, max(chart_data_y) * 2)
-		#plt.legend()
+		plt.legend()
 		plt.show()
 		
 	run()
