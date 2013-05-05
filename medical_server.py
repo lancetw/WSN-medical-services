@@ -123,9 +123,9 @@ for w in range(n['floors']):
 		#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, _PK, SID[i], FSinkID[w], K_admin)
 	PKIW.append( sub_PK )
 
-	#@ 測量時間 - 結束
-	time_end = time.time()
-	time_test['WSN_setup_phase'] = (time_end - time_start)
+#@ 測量時間 - 結束
+time_end = time.time()
+time_test['WSN_setup_phase'] = (time_end - time_start)
 
 
 # 輸出結果
