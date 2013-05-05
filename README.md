@@ -2,8 +2,8 @@
 
 Python 2.7
 
-    http://www.python.org
+[http://www.python.org](http://www.python.org)
     
 matplotlib
 
-    http://matplotlib.org
+[http://matplotlib.org](http://matplotlib.org)
