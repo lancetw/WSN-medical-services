@@ -185,28 +185,45 @@ def main():
 		spacing = key_n
 		
 		chart_data_x = list()
-		chart_data_y = list()
+		chart_data_y1 = list()
+		chart_data_y2 = list()
 		
 		for i in range(1, max_run):
 			x = spacing * i
 			ans = run_once(floor_n, x, wsn_n)
-			y = ans['key_server_gen_key_phase']
+			y1 = ans['key_server_gen_key_phase']
+			y2 = ans['WSN_setup_phase']
 			chart_data_x.append(x)
-			chart_data_y.append(y) 
+			chart_data_y1.append(y1)
+			chart_data_y2.append(y2) 
 		
 		# 畫圖表
 		import numpy as np
 		import matplotlib.pyplot as plt
 		from matplotlib import rcParams
+		# 微軟正黑體
 		rcParams['font.family'] = 'Microsoft JhengHei'
 		
+		# 圖表 [金鑰伺服器產生金鑰階段]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y, label=u"金鑰產生效能", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y1, label=u"金鑰伺服器產生金鑰階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
 		plt.title(u"時間")
-		plt.ylim(0, max(chart_data_y) * 2)
+		plt.ylim(0, max(chart_data_y1) * 2)
 		plt.legend()
+		
+		
+		# 圖表 [病患入院無線感測節點配置階段]
+		plt.figure(figsize=(8,5))
+		plt.plot(chart_data_x, chart_data_y2, label=u"病患入院無線感測節點配置階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"初始金鑰數（個）")
+		plt.ylabel(u"花費時間（秒）")
+		plt.title(u"時間")
+		plt.ylim(0, max(chart_data_y2) * 2)
+		plt.legend()
+		
+		# 顯示所有圖表
 		plt.show()
 		
 	run()
