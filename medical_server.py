@@ -226,6 +226,8 @@ def main():
 		# 顯示所有圖表
 		plt.show()
 		
+		print "圖表產生完成！"
+		
 	run()
 
 if  __name__ =='__main__':main()
