@@ -209,7 +209,7 @@ def main():
 		plt.plot(chart_data_x, chart_data_y1, label=u"金鑰伺服器產生金鑰階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"時間")
+		plt.title(u"初始金鑰數與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y1) * 2)
 		plt.legend()
 		
@@ -219,7 +219,7 @@ def main():
 		plt.plot(chart_data_x, chart_data_y2, label=u"病患入院無線感測節點配置階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"時間")
+		plt.title(u"初始金鑰數與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y2) * 2)
 		plt.legend()
 		
