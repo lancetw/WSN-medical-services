@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 無線感測醫療資訊系統環境效能模擬
 # lancetw aka Hsin-lin Cheng <lancetw@gmail.com>
 
 import random
@@ -7,9 +8,9 @@ import time
 ####### === $ 函式區 $ === #######
 
 # Hash(．)
-from hashlib import sha224
+from hashlib import sha256
 def H(data):
-	return sha224(data).hexdigest()
+	return sha256(data).hexdigest()
 
 # 金鑰產生器
 def gen_key():
@@ -19,7 +20,11 @@ def gen_key():
 from itertools import izip, cycle
 def XOR(key, data):
 	return ''.join(chr(ord(x) ^ ord(y)) for (x,y) in izip(data, cycle(key)))
-
+	
+# 子金鑰加密用 MAC
+def MAC(key, msg):
+	return
+	
 # 產生裝置的 MAC address
 def gen_node_id():
 	mac = [ 0x00, 0x16, 0x3e,
@@ -32,20 +37,25 @@ def gen_node_id():
 def rand_num_list(n, total):
 	dividers = sorted(random.sample(xrange(1, total), n - 1))
 	return [a - b for a, b in zip(dividers + [total], [0] + dividers)]
+	
+# 一般隨機浮點數
+def randrange_float(start, stop, step):
+    return random.randint(0, int((stop - start) / step)) * step + start
 
+# 初始化系統變數
 def init(floors=None, keys=None, wsns_total=None):
 	# 初始化變數
 	if floors != None: n['floors'] = floors
 	if keys != None: n['keys'] = keys
 	if wsns_total != None: n['wsns_total'] = wsns_total
 	# 給每樓層的匯聚節點設定 MAC Address
-	for i in range(n['floors']):
+	for w in range(n['floors']):
 		FSinkID.append( gen_node_id() )
 	# 為每樓層產生隨機個感測節點數	
 	rnd = rand_num_list(n['floors'], n['wsns_total'])
 	# 給所有的感測節點設定 MAC Address
-	for i in range(n['floors']):
-		_wsn = rnd[i]
+	for w in range(n['floors']):
+		_wsn = rnd[w]
 		n['wsns'].append( _wsn )
 		for j in range(_wsn):
 			SID.append( gen_node_id() )
@@ -56,7 +66,7 @@ def init(floors=None, keys=None, wsns_total=None):
 
 ####### === $ 金鑰伺服器產生金鑰階段 $ === #######
 
-def key_server_gen_key_phase():
+def WSN_gen_key_phase():
 	# 產生 n 把金鑰儲存到金鑰池中
 	for i in range(n['keys']):
 		key = gen_key()
@@ -64,7 +74,6 @@ def key_server_gen_key_phase():
 
 	# 從金鑰池中挑出金鑰 GK[w]，以此產生金鑰鍊 SK[w] 給每個樓層的匯聚節點
 	GK = list()
-	SK = list()
 	for w in range(n['floors']):
 		s = 0
 		_GK = P.pop()
@@ -75,8 +84,6 @@ def key_server_gen_key_phase():
 		s += 1
 		
 	# 以金鑰鍊產生獨一無二的子金鑰，配發給每個無線感測節點
-	# SKI 紀錄每層樓各自的子金鑰表（子金鑰用來加密生理資訊）
-	SKI = list()
 	for w in range(n['floors']):
 		sub_SK = list()
 		i = n['wsns'][w]
@@ -89,7 +96,7 @@ def key_server_gen_key_phase():
 			# 印出過程
 			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, _SK, _SK_old, R[n_keys])
 			n_keys -= 1
-		SKI.append( sub_SK )
+		SKx.append( sub_SK )
 
 
 ####### === $ 病患入院無線感測節點配置階段 $ === #######
@@ -105,13 +112,55 @@ def WSN_setup_phase():
 			# 印出過程
 			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, _PK, SID[i], FSinkID[w], K_admin)
 		PKIW.append( sub_PK )
+		
+		
+####### === $ 無線醫護感測節點日常運作程序 - 每日定期蒐集生理資訊 $ === #######
+# 產生生理資訊
+def gen_phinfo_M():
+	for i in range(n['wsns_total']):
+		# p: 脈搏, bp: 血壓, bt: 體溫, ecg: 心電圖
+		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': open('s0028lre.xyz', 'rb').read()}
+		M.append(d)
+	return M
 
+# phinfo_list: 輸入生理資訊列表
+def WSN_daily_collect_info_process():
+	packets = list()
+	def _send(i, data):
+		packets.insert(i, data)
+	
+	def _recv(i):
+		return packets[i]
+
+	# 樓層匯聚節點開始要求各節點回報生理資訊
+	for w in range(n['floors']):
+		# 匯聚節點送出請求 SK 給每個無線感測節點，使用 SKx 加解密
+		_SKx = SKx[w]
+		Mp = 'MSG TEST'
+		for i in range(n['wsns'][w]):
+			d = {'encrypted': MAC(_SKx[i], Mp), 'plaintext': Mp}
+			_send(i, d)
+			
+		# 模擬子節點取得資訊
+		for i in range(n['wsns'][w]):
+			d = _recv(i)
+			plaintext = d['plaintext']
+			print MAC(_SKx[i], d['encrypted'])
+			print '-' * 80
+			print plaintext
+			print '-' * 80
+			print cmp( MAC(_SKx[i], d['encrypted']), plaintext )
+			print '-' * 80
+				
+	
+	
+		
 
 ####### === $ 變數定義區 $ === #######
 
 # 時間測量
 time_test = {}
-
+# 資料暫存陣列
 n = dict()
 # 醫院的樓層數
 n['floors'] = 5
@@ -127,9 +176,14 @@ SID = list()
 P = list()
 # 隨機數
 R = list()
-# 系統管理員密鑰 (sha224)
-K_admin = '86a9c7e6d1d263e5419d0eb0fa12ede100bf482e640ddc2073947e8a'
-
+# 匯聚節點金鑰
+SK = list()
+# 無線感測節點子金鑰（子金鑰用來加密生理資訊）
+SKx = list()
+# 系統管理員密鑰 (sha256)
+K_admin = "86a9c7e6d1d263e5419d0eb0fa12ede100bf482e640ddc2073947e8a"
+# 生理資訊暫存
+M = list()
 
 ####### === $ 主程式 $ === #######
 
@@ -140,10 +194,10 @@ def main():
 		
 		#@ 測量時間 - 開始
 		time_start = time.time()
-		key_server_gen_key_phase()
+		WSN_gen_key_phase()
 		#@ 測量時間 - 結束
 		time_end = time.time()
-		time_test['key_server_gen_key_phase'] = (time_end - time_start)
+		time_test['WSN_gen_key_phase'] = (time_end - time_start)
 		
 		#@ 測量時間 - 開始
 		time_start = time.time()
@@ -151,6 +205,9 @@ def main():
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_setup_phase'] = (time_end - time_start)
+		
+		gen_phinfo_M()
+		WSN_daily_collect_info_process()
 		
 		if output == True:
 			output_ans()
@@ -166,7 +223,7 @@ def main():
 		print '-' * 80
 		#print 'SK[w] = H(GK[w] ⊕ R[s])'
 		#print 'SK[i-1] = H(SK[w] ⊕ R[n]), SK[i-2] = H(SK[i-1] ⊕ R[n-1]) ... SK[0] = H(SK[1] ⊕ R[1])'
-		print '金鑰伺服器產生金鑰階段 - 花費時間：%f 秒' % time_test['key_server_gen_key_phase']
+		print '金鑰伺服器產生金鑰階段 - 花費時間：%f 秒' % time_test['WSN_gen_key_phase']
 		print '-' * 80
 		#print 'PK[i][w] = H(SID[i] || FSinkID[w] || K_admin)'
 		print '病患入院無線感測節點配置階段 - 花費時間：%f 秒' % time_test['WSN_setup_phase']
@@ -191,7 +248,7 @@ def main():
 		for i in range(1, max_run):
 			x = spacing * i
 			ans = run_once(floor_n, x, wsn_n)
-			y1 = ans['key_server_gen_key_phase']
+			y1 = ans['WSN_gen_key_phase']
 			y2 = ans['WSN_setup_phase']
 			chart_data_x.append(x)
 			chart_data_y1.append(y1)
