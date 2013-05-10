@@ -202,7 +202,7 @@ def WSN_daily_collect_info_process(crypt_type=None):
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
 			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
-				_save(i, pickle.loads( d['plaintext'] ))
+				_save(i, d['plaintext'])
 			
 		
 ####### === $ 變數定義區 $ === #######
@@ -324,7 +324,7 @@ def main():
 		init_static(floor_n, wsn_n)
 		
 		# 準備生理資料
-		print '#準備生理資料 gen_phinfo_M()'
+		print '#準備 %d 組生理資料 gen_phinfo_M()' % wsn_n
 		gen_phinfo_M()
 		
 		for i in range(1, max_run):
