@@ -2,28 +2,64 @@
 # 無線感測醫療資訊系統環境效能模擬
 # lancetw aka Hsin-lin Cheng <lancetw@gmail.com>
 
-import random
 import time
+import base64
+from Crypto.Cipher import AES
+from Crypto import Random
+from Crypto.Random import random
 
 ####### === $ 函式區 $ === #######
 
 # Hash(．)
 from hashlib import sha256
 def H(data):
-	return sha256(data).hexdigest()
-
-# 金鑰產生器
-def gen_key():
-	return H( str(random.getrandbits(256)) )
+	return sha256(data).digest()
 
 # XOR 函數
-from itertools import izip, cycle
-def XOR(key, data):
-	return ''.join(chr(ord(x) ^ ord(y)) for (x,y) in izip(data, cycle(key)))
+from Crypto.Cipher import XOR as _XOR
+def XOR(key, msg, mode=None):
+	xor = _XOR.new(key)
+	if mode == 'encrypt':
+		return xor.encrypt(msg)
+	if mode == 'decrypt':
+		return xor.decrypt(msg)
 	
+# AES Class
+BS = 16
+pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
+unpad = lambda s : s[0:-ord(s[-1])]
+class AESCipher:
+    def __init__( self, key ):
+        self.key = key 
+
+    def encrypt( self, raw ):
+        raw = pad(raw)
+        iv = Random.new().read( AES.block_size )
+        cipher = AES.new( self.key, AES.MODE_CBC, iv )
+        return base64.b64encode( iv + cipher.encrypt( raw ) ) 
+
+    def decrypt( self, enc ):
+        enc = base64.b64decode(enc)
+        iv = enc[:BS]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv )
+        return unpad(cipher.decrypt( enc[BS:] ))
+
+# 通用金鑰產生器
+def gen_key():
+	return Random.new().read(BS)
+
 # 子金鑰加密用 MAC
-def MAC(key, msg):
-	return
+def MAC(key, msg, crypt_method=None, mode=None):
+	if crypt_method == 'XOR':
+		return XOR(key, msg, mode)
+	elif crypt_method == 'AES':
+		aes = AESCipher(key)
+		if mode == 'encrypt':
+			return aes.encrypt(msg)
+		if mode == 'decrypt':
+			return aes.decrypt(msg)
+	else:
+		return msg
 	
 # 產生裝置的 MAC address
 def gen_node_id():
@@ -78,9 +114,9 @@ def WSN_gen_key_phase():
 		s = 0
 		_GK = P.pop()
 		GK.insert( w, _GK )
-		SK.insert( w, H(XOR(GK[w], R[s])) )
+		SK.insert( w, H(XOR(GK[w], R[s], 'encrypt')) )
 		# 印出過程
-		#print 'SK[%d] = H(%s ⊕ %s)' % (w, _GK, R[s])
+		#print 'SK[%d] = %s = H(%s ⊕ %s)' % (w+1, SK[w].decode('hex'), GK[w].decode('hex'), R[s])
 		s += 1
 		
 	# 以金鑰鍊產生獨一無二的子金鑰，配發給每個無線感測節點
@@ -88,13 +124,13 @@ def WSN_gen_key_phase():
 		sub_SK = list()
 		i = n['wsns'][w]
 		n_keys = n['keys']
-		_SK = H(XOR(SK[w], R[n_keys]))
+		_SK = H(XOR(SK[w], R[n_keys], 'encrypt'))
 		for j in range(i):
 			_SK_old = _SK
-			_SK = H(XOR(_SK, R[n_keys]))
+			_SK = H(XOR(_SK, R[n_keys], 'encrypt'))
 			sub_SK.append( _SK )
 			# 印出過程
-			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, _SK, _SK_old, R[n_keys])
+			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, _SK.decode('hex'), _SK_old.decode('hex'), R[n_keys])
 			n_keys -= 1
 		SKx.append( sub_SK )
 
@@ -110,7 +146,7 @@ def WSN_setup_phase():
 			_PK = H(SID[i] + FSinkID[w] + K_admin)
 			sub_PK.append( _PK )
 			# 印出過程
-			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, _PK, SID[i], FSinkID[w], K_admin)
+			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, _PK.decode('hex'), SID[i], FSinkID[w], K_admin.decode('hex'))
 		PKIW.append( sub_PK )
 		
 		
@@ -124,13 +160,17 @@ def gen_phinfo_M():
 	return M
 
 # phinfo_list: 輸入生理資訊列表
-def WSN_daily_collect_info_process():
+def WSN_daily_collect_info_process(crypt_method=None):
 	packets = list()
+	phyinfo = list()
 	def _send(i, data):
 		packets.insert(i, data)
 	
 	def _recv(i):
 		return packets[i]
+		
+	def _save(i, data):
+		phyinfo.insert(i, data)
 
 	# 樓層匯聚節點開始要求各節點回報生理資訊
 	for w in range(n['floors']):
@@ -138,24 +178,26 @@ def WSN_daily_collect_info_process():
 		_SKx = SKx[w]
 		Mp = 'MSG TEST'
 		for i in range(n['wsns'][w]):
-			d = {'encrypted': MAC(_SKx[i], Mp), 'plaintext': Mp}
+			d = {'encrypted': MAC(_SKx[i], Mp, crypt_method, 'encrypt'), 'plaintext': Mp}
 			_send(i, d)
 			
 		# 模擬子節點取得資訊
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
-			plaintext = d['plaintext']
-			print MAC(_SKx[i], d['encrypted'])
-			print '-' * 80
-			print plaintext
-			print '-' * 80
-			print cmp( MAC(_SKx[i], d['encrypted']), plaintext )
-			print '-' * 80
-				
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_method, 'decrypt'), d['plaintext'] ) == 0):
+				M_str = ''.join(str(e) for e in M[i])
+				# 加密生理資訊
+				d = {'encrypted': MAC(_SKx[i], M_str, crypt_method, 'encrypt'), 'plaintext': M_str}
+				_send(i, d)
 	
-	
+		# 模擬匯聚節點接收資訊
+		for i in range(n['wsns'][w]):
+			d = _recv(i)
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_method, 'decrypt'), d['plaintext'] ) == 0):
+				M_str = list(d['plaintext'])
+				_save(i, d['plaintext'])
+			
 		
-
 ####### === $ 變數定義區 $ === #######
 
 # 時間測量
@@ -180,10 +222,10 @@ R = list()
 SK = list()
 # 無線感測節點子金鑰（子金鑰用來加密生理資訊）
 SKx = list()
-# 系統管理員密鑰 (sha256)
-K_admin = "86a9c7e6d1d263e5419d0eb0fa12ede100bf482e640ddc2073947e8a"
 # 生理資訊暫存
 M = list()
+# 系統管理員密鑰 (sha256)
+K_admin = sha256("another awesome password").digest()
 
 ####### === $ 主程式 $ === #######
 
@@ -206,8 +248,28 @@ def main():
 		time_end = time.time()
 		time_test['WSN_setup_phase'] = (time_end - time_start)
 		
+		# 準備資料
 		gen_phinfo_M()
+		#@ 測量時間 - 開始
+		time_start = time.time()
 		WSN_daily_collect_info_process()
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_daily_process_no_decrypted'] = (time_end - time_start)
+		
+		#@ 測量時間 - 開始
+		time_start = time.time()
+		WSN_daily_collect_info_process('XOR')
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_daily_process_XOR'] = (time_end - time_start)
+		
+		#@ 測量時間 - 開始
+		time_start = time.time()
+		WSN_daily_collect_info_process('AES')
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_daily_process_AES'] = (time_end - time_start)
 		
 		if output == True:
 			output_ans()
@@ -234,7 +296,7 @@ def main():
 		floor_n = input("請輸入醫療大樓樓層總數（固定），例如 10：")
 		wsn_n = input("請輸入無線感測節點總數（固定），例如 1000：")
 		
-		print "請耐心等待，圖片產生中..."
+		print '請耐心等待，圖片產生中...'
 		
 		# 跑幾次
 		max_run = (scope / key_n) + 1
@@ -244,15 +306,24 @@ def main():
 		chart_data_x = list()
 		chart_data_y1 = list()
 		chart_data_y2 = list()
+		chart_data_y3 = list()
+		chart_data_y4 = list()
+		chart_data_y5 = list()
 		
 		for i in range(1, max_run):
 			x = spacing * i
 			ans = run_once(floor_n, x, wsn_n)
 			y1 = ans['WSN_gen_key_phase']
 			y2 = ans['WSN_setup_phase']
+			y3 = ans['WSN_daily_process_no_decrypted']
+			y4 = ans['WSN_daily_process_XOR']
+			y5 = ans['WSN_daily_process_AES']
 			chart_data_x.append(x)
 			chart_data_y1.append(y1)
-			chart_data_y2.append(y2) 
+			chart_data_y2.append(y2)
+			chart_data_y3.append(y3)
+			chart_data_y4.append(y4)
+			chart_data_y5.append(y5)
 		
 		# 畫圖表
 		import numpy as np
@@ -267,9 +338,8 @@ def main():
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
 		plt.title(u"初始金鑰數與花費時間關係圖")
-		plt.ylim(0, max(chart_data_y1) * 2)
+		plt.ylim(0, max(chart_data_y1) * 1.5)
 		plt.legend()
-		
 		
 		# 圖表 [病患入院無線感測節點配置階段]
 		plt.figure(figsize=(8,5))
@@ -277,13 +347,24 @@ def main():
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
 		plt.title(u"初始金鑰數與花費時間關係圖")
-		plt.ylim(0, max(chart_data_y2) * 2)
+		plt.ylim(0, max(chart_data_y2) * 1.5)
+		plt.legend()
+		
+		# 圖表 [每日定期蒐集生理資訊]
+		plt.figure(figsize=(8,5))
+		plt.plot(chart_data_x, chart_data_y3, label=u"每日定期蒐集生理資訊 - 無加密", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y4, label=u"每日定期蒐集生理資訊 - XOR 加密", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y5, label=u"每日定期蒐集生理資訊 - AES 加密", color="green", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"初始金鑰數（個）")
+		plt.ylabel(u"花費時間（秒）")
+		plt.title(u"每日定期蒐集生理資訊 - Performance")
+		plt.ylim(0, max(chart_data_y3 + chart_data_y4 + chart_data_y5) * 1.5)
 		plt.legend()
 		
 		# 顯示所有圖表
 		plt.show()
 		
-		print "圖表產生完成！"
+		print '圖表產生完成！'
 		
 	run()
 
