@@ -49,17 +49,21 @@ def gen_key():
 	return Random.new().read(BS)
 
 # 子金鑰加密用 MAC
-def MAC(key, msg, crypt_method=None, mode=None):
-	if crypt_method == 'XOR':
+def MAC(key, msg, crypt_type=None, mode=None):
+	if crypt_type == None:
+		return msg
+	
+	if crypt_type == 'XOR':
 		return XOR(key, msg, mode)
-	elif crypt_method == 'AES':
+		
+	if crypt_type == 'AES':
 		aes = AESCipher(key)
 		if mode == 'encrypt':
 			return aes.encrypt(msg)
-		if mode == 'decrypt':
+		elif mode == 'decrypt':
 			return aes.decrypt(msg)
-	else:
-		return msg
+		else:
+			return aes.encrypt(msg)
 	
 # 產生裝置的 MAC address
 def gen_node_id():
@@ -160,7 +164,7 @@ def gen_phinfo_M():
 	return M
 
 # phinfo_list: 輸入生理資訊列表
-def WSN_daily_collect_info_process(crypt_method=None):
+def WSN_daily_collect_info_process(crypt_type=None):
 	packets = list()
 	phyinfo = list()
 	def _send(i, data):
@@ -178,22 +182,22 @@ def WSN_daily_collect_info_process(crypt_method=None):
 		_SKx = SKx[w]
 		Mp = 'MSG TEST'
 		for i in range(n['wsns'][w]):
-			d = {'encrypted': MAC(_SKx[i], Mp, crypt_method, 'encrypt'), 'plaintext': Mp}
+			d = {'encrypted': MAC(_SKx[i], Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
 			_send(i, d)
 			
 		# 模擬子節點取得資訊
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
-			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_method, 'decrypt'), d['plaintext'] ) == 0):
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
 				M_str = ''.join(str(e) for e in M[i])
 				# 加密生理資訊
-				d = {'encrypted': MAC(_SKx[i], M_str, crypt_method, 'encrypt'), 'plaintext': M_str}
+				d = {'encrypted': MAC(_SKx[i], M_str, crypt_type, 'encrypt'), 'plaintext': M_str}
 				_send(i, d)
 	
 		# 模擬匯聚節點接收資訊
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
-			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_method, 'decrypt'), d['plaintext'] ) == 0):
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
 				M_str = list(d['plaintext'])
 				_save(i, d['plaintext'])
 			
@@ -291,9 +295,9 @@ def main():
 		print '病患入院無線感測節點配置階段 - 花費時間：%f 秒' % time_test['WSN_setup_phase']
 
 	def run():
-		scope = input("請輸入目標金鑰數上限，例如 3000：")
-		key_n = input("請輸入每回產生幾組金鑰，例如 500：")
-		floor_n = input("請輸入醫療大樓樓層總數（固定），例如 10：")
+		scope = input("請輸入目標金鑰數上限，例如 6000：")
+		key_n = input("請輸入每回產生幾組金鑰，例如 1200：")
+		floor_n = input("請輸入醫療大樓樓層總數（固定），例如 15：")
 		wsn_n = input("請輸入無線感測節點總數（固定），例如 1000：")
 		
 		print '請耐心等待，圖片產生中...'
@@ -334,37 +338,38 @@ def main():
 		
 		# 圖表 [金鑰伺服器產生金鑰階段]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y1, label=u"金鑰伺服器產生金鑰階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y1, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"初始金鑰數與花費時間關係圖")
+		plt.title(u"「初始金鑰」數量與「金鑰伺服器產生金鑰階段」花費時間關係圖")
 		plt.ylim(0, max(chart_data_y1) * 1.5)
 		plt.legend()
 		
 		# 圖表 [病患入院無線感測節點配置階段]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y2, label=u"病患入院無線感測節點配置階段 - Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y2, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"初始金鑰數與花費時間關係圖")
+		plt.title(u"「初始金鑰」數量與「病患入院無線感測節點配置階段」花費時間關係圖")
 		plt.ylim(0, max(chart_data_y2) * 1.5)
 		plt.legend()
 		
 		# 圖表 [每日定期蒐集生理資訊]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y3, label=u"每日定期蒐集生理資訊 - 無加密", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x, chart_data_y4, label=u"每日定期蒐集生理資訊 - XOR 加密", color="blue", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x, chart_data_y5, label=u"每日定期蒐集生理資訊 - AES 加密", color="green", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y3, label=u"（無加密）- Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y4, label=u"（XOR）- Performance", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x, chart_data_y5, label=u"（AES）- Performance", color="green", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"每日定期蒐集生理資訊 - Performance")
+		plt.title(u"「初始金鑰」數量與「每日定期蒐集生理資訊」花費時間關係圖")
 		plt.ylim(0, max(chart_data_y3 + chart_data_y4 + chart_data_y5) * 1.5)
 		plt.legend()
 		
+		print '圖表產生完成！'
 		# 顯示所有圖表
 		plt.show()
 		
-		print '圖表產生完成！'
+		
 		
 	run()
 
