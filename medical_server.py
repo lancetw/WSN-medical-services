@@ -329,6 +329,7 @@ def main():
 		gen_phinfo_M()
 		
 		for i in range(1, max_run):
+			print '-' * 80
 			print 'Run %d/%d' % (i, max_run)
 			print '-' * 80
 			x = spacing * i
