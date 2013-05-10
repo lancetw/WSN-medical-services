@@ -4,6 +4,7 @@
 
 import time
 import base64
+import pickle
 from Crypto.Cipher import AES
 from Crypto import Random
 from Crypto.Random import random
@@ -83,10 +84,9 @@ def randrange_float(start, stop, step):
     return random.randint(0, int((stop - start) / step)) * step + start
 
 # 初始化系統變數
-def init(floors=None, keys=None, wsns_total=None):
+def init_static(floors=None, wsns_total=None):
 	# 初始化變數
 	if floors != None: n['floors'] = floors
-	if keys != None: n['keys'] = keys
 	if wsns_total != None: n['wsns_total'] = wsns_total
 	# 給每樓層的匯聚節點設定 MAC Address
 	for w in range(n['floors']):
@@ -99,10 +99,16 @@ def init(floors=None, keys=None, wsns_total=None):
 		n['wsns'].append( _wsn )
 		for j in range(_wsn):
 			SID.append( gen_node_id() )
+
+# 初始化系統變數
+def init(floors=None, keys=None, wsns_total=None):
+	# 初始化變數
+	if floors != None: n['floors'] = floors
+	if keys != None: n['keys'] = keys
+	if wsns_total != None: n['wsns_total'] = wsns_total
 	# 產生隨機數
 	for i in range(n['keys'] * n['floors'] + n['wsns_total']):
 		R.insert( i, str(random.randint(3, 65537)) )
-
 
 ####### === $ 金鑰伺服器產生金鑰階段 $ === #######
 
@@ -120,7 +126,7 @@ def WSN_gen_key_phase():
 		GK.insert( w, _GK )
 		SK.insert( w, H(XOR(GK[w], R[s], 'encrypt')) )
 		# 印出過程
-		#print 'SK[%d] = %s = H(%s ⊕ %s)' % (w+1, SK[w].decode('hex'), GK[w].decode('hex'), R[s])
+		#print 'SK[%d] = %s = H(%s ⊕ %s)' % (w+1, str(SK[w]), str(GK[w]), R[s])
 		s += 1
 		
 	# 以金鑰鍊產生獨一無二的子金鑰，配發給每個無線感測節點
@@ -134,7 +140,7 @@ def WSN_gen_key_phase():
 			_SK = H(XOR(_SK, R[n_keys], 'encrypt'))
 			sub_SK.append( _SK )
 			# 印出過程
-			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, _SK.decode('hex'), _SK_old.decode('hex'), R[n_keys])
+			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, str(_SK), str(_SK_old), R[n_keys])
 			n_keys -= 1
 		SKx.append( sub_SK )
 
@@ -150,7 +156,7 @@ def WSN_setup_phase():
 			_PK = H(SID[i] + FSinkID[w] + K_admin)
 			sub_PK.append( _PK )
 			# 印出過程
-			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, _PK.decode('hex'), SID[i], FSinkID[w], K_admin.decode('hex'))
+			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, str(_PK), SID[i], FSinkID[w], str(K_admin))
 		PKIW.append( sub_PK )
 		
 		
@@ -160,7 +166,7 @@ def gen_phinfo_M():
 	for i in range(n['wsns_total']):
 		# p: 脈搏, bp: 血壓, bt: 體溫, ecg: 心電圖
 		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': open('s0028lre.xyz', 'rb').read()}
-		M.append(d)
+		M.append( pickle.dumps(d) )
 	return M
 
 # phinfo_list: 輸入生理資訊列表
@@ -180,26 +186,24 @@ def WSN_daily_collect_info_process(crypt_type=None):
 	for w in range(n['floors']):
 		# 匯聚節點送出請求 SK 給每個無線感測節點，使用 SKx 加解密
 		_SKx = SKx[w]
-		Mp = 'MSG TEST'
+		Mp = 'MSG:PHYDATA_REQUEST FROM Side %i' % w
 		for i in range(n['wsns'][w]):
 			d = {'encrypted': MAC(_SKx[i], Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
 			_send(i, d)
-			
+		
 		# 模擬子節點取得資訊
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
 			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
-				M_str = ''.join(str(e) for e in M[i])
 				# 加密生理資訊
-				d = {'encrypted': MAC(_SKx[i], M_str, crypt_type, 'encrypt'), 'plaintext': M_str}
+				d = {'encrypted': MAC(_SKx[i], M[i], crypt_type, 'encrypt'), 'plaintext': M[i]}
 				_send(i, d)
 	
 		# 模擬匯聚節點接收資訊
 		for i in range(n['wsns'][w]):
 			d = _recv(i)
 			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
-				M_str = list(d['plaintext'])
-				_save(i, d['plaintext'])
+				_save(i, pickle.loads( d['plaintext'] ))
 			
 		
 ####### === $ 變數定義區 $ === #######
@@ -229,17 +233,19 @@ SKx = list()
 # 生理資訊暫存
 M = list()
 # 系統管理員密鑰 (sha256)
-K_admin = sha256("another awesome password").digest()
+K_admin = sha256('live long and prosper').digest()
 
 ####### === $ 主程式 $ === #######
 
 def main():
 	def run_once(floors=7, keys=50, wsns_total=1000, output=False):
 		# 初始化變數
+		print 'init()'
 		init(floors, keys, wsns_total)
 		
 		#@ 測量時間 - 開始
 		time_start = time.time()
+		print 'WSN_gen_key_phase()'
 		WSN_gen_key_phase()
 		#@ 測量時間 - 結束
 		time_end = time.time()
@@ -247,15 +253,15 @@ def main():
 		
 		#@ 測量時間 - 開始
 		time_start = time.time()
+		print 'WSN_setup_phase()'
 		WSN_setup_phase()
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_setup_phase'] = (time_end - time_start)
-		
-		# 準備資料
-		gen_phinfo_M()
+
 		#@ 測量時間 - 開始
 		time_start = time.time()
+		print 'WSN_daily_collect_info_process()'
 		WSN_daily_collect_info_process()
 		#@ 測量時間 - 結束
 		time_end = time.time()
@@ -314,7 +320,17 @@ def main():
 		chart_data_y4 = list()
 		chart_data_y5 = list()
 		
+		# 初始化
+		print '#初始化 init_static()'
+		init_static(floor_n, wsn_n)
+		
+		# 準備生理資料
+		print '#準備生理資料 gen_phinfo_M()'
+		gen_phinfo_M()
+		
 		for i in range(1, max_run):
+			print 'Run %d/%d' % (i, max_run)
+			print '-' * 80
 			x = spacing * i
 			ans = run_once(floor_n, x, wsn_n)
 			y1 = ans['WSN_gen_key_phase']
