@@ -243,25 +243,25 @@ def main():
 		print 'init()'
 		init(floors, keys, wsns_total)
 		
+		print 'WSN_gen_key_phase()'
 		#@ 測量時間 - 開始
 		time_start = time.time()
-		print 'WSN_gen_key_phase()'
 		WSN_gen_key_phase()
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_gen_key_phase'] = (time_end - time_start)
 		
+		print 'WSN_setup_phase()'
 		#@ 測量時間 - 開始
 		time_start = time.time()
-		print 'WSN_setup_phase()'
 		WSN_setup_phase()
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_setup_phase'] = (time_end - time_start)
 
+		print 'WSN_daily_collect_info_process()'
 		#@ 測量時間 - 開始
 		time_start = time.time()
-		print 'WSN_daily_collect_info_process()'
 		WSN_daily_collect_info_process()
 		#@ 測量時間 - 結束
 		time_end = time.time()
@@ -330,7 +330,7 @@ def main():
 		
 		for i in range(1, max_run):
 			print '-' * 80
-			print 'Run %d/%d' % (i, max_run)
+			print 'Run %d/%d' % (i, max_run-1)
 			print '-' * 80
 			x = spacing * i
 			ans = run_once(floor_n, x, wsn_n)
