@@ -21,6 +21,12 @@ PyCrypto (Windows)
 [http://www.voidspace.org.uk/python/modules.shtml#pycrypto](http://www.voidspace.org.uk/python/modules.shtml#pycrypto)
 
 
+### 測試資料：
+	目標金鑰數上限 6000
+	每回產生幾組金鑰 1200
+	醫療大樓樓層總數 15
+	無線感測節點總數 1000
+
 
 ![](http://i.imgur.com/14BUBDU.png)
 
