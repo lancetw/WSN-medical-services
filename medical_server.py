@@ -4,7 +4,6 @@
 
 import time
 import base64
-import pickle
 from Crypto.Cipher import AES
 from Crypto import Random
 from Crypto.Random import random
@@ -166,7 +165,7 @@ def gen_phinfo_M():
 	for i in range(n['wsns_total']):
 		# p: 脈搏, bp: 血壓, bt: 體溫, ecg: 心電圖
 		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': open('s0028lre.xyz', 'rb').read()}
-		M.append( pickle.dumps(d) )
+		M.append( str(d) )
 	return M
 
 # phinfo_list: 輸入生理資訊列表
