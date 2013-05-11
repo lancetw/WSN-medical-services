@@ -3,10 +3,6 @@
 # lancetw aka Hsin-lin Cheng <lancetw@gmail.com>
 
 import time
-import base64
-from Crypto.Cipher import AES
-from Crypto import Random
-from Crypto.Random import random
 
 ####### === $ 函式區 $ === #######
 
@@ -23,8 +19,12 @@ def XOR(key, msg, mode=None):
 		return xor.encrypt(msg)
 	if mode == 'decrypt':
 		return xor.decrypt(msg)
-	
+
 # AES Class
+import base64
+from Crypto.Cipher import AES
+from Crypto import Random
+from Crypto.Random import random
 BS = 16
 pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
 unpad = lambda s : s[0:-ord(s[-1])]
