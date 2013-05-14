@@ -25,7 +25,7 @@ import base64
 from Crypto.Cipher import AES
 from Crypto import Random
 from Crypto.Random import random
-BS = 32
+BS = AES.block_size
 pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
 unpad = lambda s : s[0:-ord(s[-1])]
 class AESCipher:
@@ -40,13 +40,13 @@ class AESCipher:
 
     def decrypt(self, enc):
         enc = base64.b64decode(enc)
-        iv = enc[:16]
+        iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
-        return unpad(cipher.decrypt( enc[16:] ))
+        return unpad(cipher.decrypt( enc[AES.block_size:] ))
 
 # 通用金鑰產生器
 def gen_key():
-	return Random.new().read(BS)
+	return Random.new().read(32)
 
 # 子金鑰加密用 MAC
 def MAC(key, msg, crypt_type=None, mode=None):
@@ -162,10 +162,12 @@ def WSN_setup_phase():
 ####### === $ 無線醫護感測節點日常運作程序 - 每日定期蒐集生理資訊 $ === #######
 # 產生生理資訊
 def gen_phinfo_M():
+	ecg_bin = open('s0028lre.xyz', 'rb').read()
 	for i in range(n['wsns_total']):
 		# p: 脈搏, bp: 血壓, bt: 體溫, ecg: 心電圖
-		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': open('s0028lre.xyz', 'rb').read()}
+		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': ecg_bin}
 		M.append( str(d) )
+		print '%d..' % (i+1),
 	return M
 
 # phinfo_list: 輸入生理資訊列表
