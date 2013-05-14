@@ -168,6 +168,7 @@ def gen_phinfo_M():
 		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': ecg_bin}
 		M.append( str(d) )
 		print '%d..' % (i+1),
+	print '\n'
 	return M
 
 # phinfo_list: 輸入生理資訊列表
