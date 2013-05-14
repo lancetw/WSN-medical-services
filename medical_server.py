@@ -25,7 +25,7 @@ import base64
 from Crypto.Cipher import AES
 from Crypto import Random
 from Crypto.Random import random
-BS = 16
+BS = 32
 pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
 unpad = lambda s : s[0:-ord(s[-1])]
 class AESCipher:
@@ -40,9 +40,9 @@ class AESCipher:
 
     def decrypt(self, enc):
         enc = base64.b64decode(enc)
-        iv = enc[:BS]
+        iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
-        return unpad(cipher.decrypt( enc[BS:] ))
+        return unpad(cipher.decrypt( enc[16:] ))
 
 # 通用金鑰產生器
 def gen_key():
