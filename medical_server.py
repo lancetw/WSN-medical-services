@@ -83,31 +83,34 @@ def randrange_float(start, stop, step):
     return random.randint(0, int((stop - start) / step)) * step + start
 
 # 初始化系統變數
-def init_static(floors=None, wsns_total=None):
+def init_static(floors=None, keys=None, wsns_total=None):
 	# 初始化變數
 	if floors != None: n['floors'] = floors
+	if keys != None: n['keys'] = keys
 	if wsns_total != None: n['wsns_total'] = wsns_total
+	
 	# 給每樓層的匯聚節點設定 MAC Address
 	for w in range(n['floors']):
-		FSinkID.append( gen_node_id() )
+		FSinkID.insert( w, gen_node_id() )
 	# 為每樓層產生隨機個感測節點數	
 	rnd = rand_num_list(n['floors'], n['wsns_total'])
 	# 給所有的感測節點設定 MAC Address
 	for w in range(n['floors']):
 		_wsn = rnd[w]
-		n['wsns'].append( _wsn )
+		n['wsns'].insert( w, _wsn )
 		for j in range(_wsn):
-			SID.append( gen_node_id() )
+			SID.insert( j, gen_node_id() )
 
-# 初始化系統變數
 def init(floors=None, keys=None, wsns_total=None):
 	# 初始化變數
 	if floors != None: n['floors'] = floors
 	if keys != None: n['keys'] = keys
 	if wsns_total != None: n['wsns_total'] = wsns_total
+
 	# 產生隨機數
 	for i in range(n['keys'] * n['floors'] + n['wsns_total']):
 		R.insert( i, str(random.randint(3, 65537)) )
+			
 
 ####### === $ 金鑰伺服器產生金鑰階段 $ === #######
 
@@ -137,11 +140,11 @@ def WSN_gen_key_phase():
 		for j in range(i):
 			_SK_old = _SK
 			_SK = H(XOR(_SK, R[n_keys], 'encrypt'))
-			sub_SK.append( _SK )
+			sub_SK.insert( j, _SK )
 			# 印出過程
 			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, str(_SK), str(_SK_old), R[n_keys])
 			n_keys -= 1
-		SKx.append( sub_SK )
+		SKx.insert( w, sub_SK )
 
 
 ####### === $ 病患入院無線感測節點配置階段 $ === #######
@@ -153,10 +156,10 @@ def WSN_setup_phase():
 		sub_PK = list()
 		for i in range(n['wsns'][w]):
 			_PK = H(SID[i] + FSinkID[w] + K_admin)
-			sub_PK.append( _PK )
+			sub_PK.insert( i, _PK )
 			# 印出過程
 			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, str(_PK), SID[i], FSinkID[w], str(K_admin))
-		PKIW.append( sub_PK )
+		PKIW.insert( w, sub_PK )
 		
 		
 ####### === $ 無線醫護感測節點日常運作程序 - 每日定期蒐集生理資訊 $ === #######
@@ -166,7 +169,7 @@ def gen_phinfo_M():
 	for i in range(n['wsns_total']):
 		# p: 脈搏, bp: 血壓, bt: 體溫, ecg: 心電圖
 		d = {'id': SID[i], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': ecg_bin}
-		M.append( str(d) )
+		M.insert( i, str(d) )
 		print '%d..' % (i+1),
 	print '\n'
 	return M
@@ -240,10 +243,11 @@ K_admin = sha256('live long and prosper').digest()
 ####### === $ 主程式 $ === #######
 
 def main():
-	def run_once(floors=7, keys=50, wsns_total=1000, output=False):
+	def run_one(floors=10, keys=3000, wsns_total=1000, output=False):
 		# 初始化變數
 		print 'init()'
 		init(floors, keys, wsns_total)
+		init_static(floors, keys, wsns_total)
 		
 		print 'WSN_gen_key_phase()'
 		#@ 測量時間 - 開始
@@ -253,6 +257,16 @@ def main():
 		time_end = time.time()
 		time_test['WSN_gen_key_phase'] = (time_end - time_start)
 		
+		if output == True: output_ans1()
+		return time_test
+			
+	def run_two(floors=10, keys=3000, wsns_total=1000, output=False):
+		# 初始化變數
+		print 'init()'
+		init(floors, keys, wsns_total)
+		init_static(floors, keys, wsns_total)
+		WSN_gen_key_phase()
+		
 		print 'WSN_setup_phase()'
 		#@ 測量時間 - 開始
 		time_start = time.time()
@@ -260,7 +274,7 @@ def main():
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_setup_phase'] = (time_end - time_start)
-
+		
 		print 'WSN_daily_collect_info_process()'
 		#@ 測量時間 - 開始
 		time_start = time.time()
@@ -268,14 +282,14 @@ def main():
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_daily_process_no_decrypted'] = (time_end - time_start)
-		
+
 		#@ 測量時間 - 開始
 		time_start = time.time()
 		WSN_daily_collect_info_process('XOR')
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_daily_process_XOR'] = (time_end - time_start)
-		
+
 		#@ 測量時間 - 開始
 		time_start = time.time()
 		WSN_daily_collect_info_process('AES')
@@ -283,71 +297,100 @@ def main():
 		time_end = time.time()
 		time_test['WSN_daily_process_AES'] = (time_end - time_start)
 		
-		if output == True:
-			output_ans()
-		else:
-			return time_test
+		if output == True: output_ans2()
+		return time_test
 	
-	def output_ans():
+	def output_ans1():
+		# 輸出結果
+		print '=' * 80
+		print '醫院總樓層數：%d 層 |' % n['floors'],
+		print '初始金鑰數：%d 把 |' % n['keys']
+		#print '無線感測節點數：%d 台' % n['wsns_total']
+		print '-' * 80
+		#print 'SK[w] = H(GK[w] ⊕ R[s])'
+		#print 'SK[i-1] = H(SK[w] ⊕ R[n]), SK[i-2] = H(SK[i-1] ⊕ R[n-1]) ... SK[0] = H(SK[1] ⊕ R[1])'
+		print '金鑰伺服器產生金鑰階段 - 花費時間：%f 秒' % time_test['WSN_gen_key_phase']
+
+	def output_ans2():
 		# 輸出結果
 		print '=' * 80
 		print '醫院總樓層數：%d 層 |' % n['floors'],
 		print '初始金鑰數：%d 把 |' % n['keys'],
 		print '無線感測節點數：%d 台' % n['wsns_total']
 		print '-' * 80
-		#print 'SK[w] = H(GK[w] ⊕ R[s])'
-		#print 'SK[i-1] = H(SK[w] ⊕ R[n]), SK[i-2] = H(SK[i-1] ⊕ R[n-1]) ... SK[0] = H(SK[1] ⊕ R[1])'
-		print '金鑰伺服器產生金鑰階段 - 花費時間：%f 秒' % time_test['WSN_gen_key_phase']
-		print '-' * 80
 		#print 'PK[i][w] = H(SID[i] || FSinkID[w] || K_admin)'
 		print '病患入院無線感測節點配置階段 - 花費時間：%f 秒' % time_test['WSN_setup_phase']
+		print '-' * 80
+		print '每日定期蒐集生理資訊（無加密） - 花費時間：%f 秒' % time_test['WSN_daily_process_no_decrypted']
+		print '每日定期蒐集生理資訊（XOR） - 花費時間：%f 秒' % time_test['WSN_daily_process_XOR']
+		print '每日定期蒐集生理資訊（AES） - 花費時間：%f 秒' % time_test['WSN_daily_process_AES']
 
 	def run():
-		scope = input("請輸入目標金鑰數上限，例如 6000：")
-		key_n = input("請輸入每回產生幾組金鑰，例如 1200：")
-		floor_n = input("請輸入醫療大樓樓層總數（固定），例如 15：")
-		wsn_n = input("請輸入無線感測節點總數（固定），例如 1000：")
+		floor_n = input("請輸入醫療大樓有多少樓層，例如 10：")
+		key_max = input("請輸入產生金鑰數上限，例如 6000：")
+		key_n = input("請輸入每回增加幾組金鑰，例如 1000：")
+		wsn_max = input("請輸入產生無線感測節點上限，例如 6000：")
+		wsn_n = input("請輸入每回增加多少台節點，例如 1000：")
 		
 		print '請耐心等待，圖片產生中...'
 		
 		# 跑幾次
-		max_run = (scope / key_n) + 1
+		max_run = (key_max / key_n) + 1
 		# 區間間隔多少
 		spacing = key_n
 		
-		chart_data_x = list()
+		chart_data_x1 = list()
 		chart_data_y1 = list()
+		chart_data_x2 = list()
 		chart_data_y2 = list()
-		chart_data_y3 = list()
-		chart_data_y4 = list()
-		chart_data_y5 = list()
+		chart_data_y3_1 = list()
+		chart_data_y3_2 = list()
+		chart_data_y3_3 = list()
 		
-		# 初始化
-		print '#初始化 init_static()'
-		init_static(floor_n, wsn_n)
+		# run_one
+		for i in range(1, max_run):
+			print '-' * 80
+			print 'Run %d/%d' % (i, max_run-1)
+			print '-' * 80
+			x1 = spacing * i
+			ans = run_one(floor_n, x1, wsn_max, True)
+			y1 = ans['WSN_gen_key_phase']
+			chart_data_x1.append(x1)
+			chart_data_y1.append(y1)
+		
+		#######
 		
 		# 準備生理資料
-		print '#準備 %d 組生理資料 gen_phinfo_M()' % wsn_n
+		print '#' * 80
+		print '#準備 %d 組生理資料 gen_phinfo_M()' % wsn_max
 		gen_phinfo_M()
+		
+		# 跑幾次
+		max_run = (wsn_max / wsn_n) + 1
+		# 區間間隔多少
+		spacing = wsn_n
+		
+		# run_two
 		
 		for i in range(1, max_run):
 			print '-' * 80
 			print 'Run %d/%d' % (i, max_run-1)
 			print '-' * 80
-			x = spacing * i
-			ans = run_once(floor_n, x, wsn_n)
-			y1 = ans['WSN_gen_key_phase']
+			x2 = spacing * i
+			ans = run_two(floor_n, key_max, x2, True)
 			y2 = ans['WSN_setup_phase']
-			y3 = ans['WSN_daily_process_no_decrypted']
-			y4 = ans['WSN_daily_process_XOR']
-			y5 = ans['WSN_daily_process_AES']
-			chart_data_x.append(x)
-			chart_data_y1.append(y1)
+			chart_data_x2.append(x2)
 			chart_data_y2.append(y2)
-			chart_data_y3.append(y3)
-			chart_data_y4.append(y4)
-			chart_data_y5.append(y5)
-		
+			
+			y3_1 = ans['WSN_daily_process_no_decrypted']
+			y3_2 = ans['WSN_daily_process_XOR']
+			y3_3 = ans['WSN_daily_process_AES']
+			chart_data_y3_1.append(y3_1)
+			chart_data_y3_2.append(y3_2)
+			chart_data_y3_3.append(y3_3)	
+	
+		#######
+	
 		# 畫圖表
 		import numpy as np
 		import matplotlib.pyplot as plt
@@ -357,31 +400,31 @@ def main():
 		
 		# 圖表 [金鑰伺服器產生金鑰階段]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y1, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x1, chart_data_y1, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「初始金鑰」數量與「金鑰伺服器產生金鑰階段」花費時間關係圖")
+		plt.title(u"「金鑰伺服器產生金鑰階段」：初始金鑰數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y1) * 1.5)
 		plt.legend()
 		
 		# 圖表 [病患入院無線感測節點配置階段]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y2, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"初始金鑰數（個）")
+		plt.plot(chart_data_x2, chart_data_y2, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"無線感測節點數（台）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「初始金鑰」數量與「病患入院無線感測節點配置階段」花費時間關係圖")
+		plt.title(u"「病患入院無線感測節點配置階段」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y2) * 1.5)
 		plt.legend()
 		
 		# 圖表 [每日定期蒐集生理資訊]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x, chart_data_y3, label=u"（無加密）- Performance", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x, chart_data_y4, label=u"（XOR）- Performance", color="blue", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x, chart_data_y5, label=u"（AES）- Performance", color="green", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x2, chart_data_y3_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x2, chart_data_y3_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x2, chart_data_y3_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
 		plt.xlabel(u"初始金鑰數（個）")
 		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「初始金鑰」數量與「每日定期蒐集生理資訊」花費時間關係圖")
-		plt.ylim(0, max(chart_data_y3 + chart_data_y4 + chart_data_y5) * 1.5)
+		plt.title(u"「每日定期蒐集生理資訊」：無線感測節點數量與花費時間關係圖")
+		plt.ylim(0, max(chart_data_y3_1 + chart_data_y3_2 + chart_data_y3_3) * 1.5)
 		plt.legend()
 		
 		print '圖表產生完成！'
