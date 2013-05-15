@@ -46,7 +46,7 @@ class AESCipher:
 
 # 通用金鑰產生器
 def gen_key():
-	return Random.new().read(32)
+	return sha256( Random.new().read(32) ).digest()
 
 # 子金鑰加密用 MAC
 def MAC(key, msg, crypt_type=None, mode=None):
@@ -134,18 +134,16 @@ def WSN_gen_key_phase():
 	# 以金鑰鍊產生獨一無二的子金鑰，配發給每個無線感測節點
 	for w in range(n['floors']):
 		sub_SK = list()
-		i = n['wsns'][w]
 		n_keys = n['keys']
 		_SK = H(XOR(SK[w], R[n_keys], 'encrypt'))
-		for j in range(i):
+		for i in range(n['wsns'][w]):
 			_SK_old = _SK
 			_SK = H(XOR(_SK, R[n_keys], 'encrypt'))
-			sub_SK.insert( j, _SK )
+			sub_SK.insert( i, _SK )
 			# 印出過程
 			#print 'F%d: SK= %s = H(%s ⊕ %s)' % (w+1, str(_SK), str(_SK_old), R[n_keys])
 			n_keys -= 1
 		SKx.insert( w, sub_SK )
-
 
 ####### === $ 病患入院無線感測節點配置階段 $ === #######
 
@@ -176,40 +174,31 @@ def gen_phinfo_M():
 
 # phinfo_list: 輸入生理資訊列表
 def WSN_daily_collect_info_process(crypt_type=None):
-	packets = list()
-	phyinfo = list()
-	def _send(i, data):
-		packets.insert(i, data)
+	DATABASE = list()
 	
-	def _recv(i):
-		return packets[i]
-		
 	def _save(i, data):
-		phyinfo.insert(i, data)
+		DATABASE.insert(i, data)
 
 	# 樓層匯聚節點開始要求各節點回報生理資訊
 	for w in range(n['floors']):
 		# 匯聚節點送出請求 SK 給每個無線感測節點，使用 SKx 加解密
 		_SKx = SKx[w]
-		Mp = 'MSG:PHYDATA_REQUEST FROM Side %i' % w
+		Mp = 'MSG:PHYDATA_REQUEST FROM Side %d' % w
 		for i in range(n['wsns'][w]):
 			d = {'encrypted': MAC(_SKx[i], Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
-			_send(i, d)
-		
-		# 模擬子節點取得資訊
-		for i in range(n['wsns'][w]):
-			d = _recv(i)
-			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0 ):
 				# 加密生理資訊
 				d = {'encrypted': MAC(_SKx[i], M[i], crypt_type, 'encrypt'), 'plaintext': M[i]}
-				_send(i, d)
+			else:
+				print 'Error %s at %d(%d),%d(%d)' % (crypt_type, w+1, n['floors'], i+1, n['wsns'][w])
+
+			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0 ):
+				_save(i, d)
+
+def WSN_MAC_test(SK, crypt_type=None):
+	Mp = 'MSG:PHYDATA_REQUEST TEST'
+	d = {'encrypted': MAC(SK, Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
 	
-		# 模擬匯聚節點接收資訊
-		for i in range(n['wsns'][w]):
-			d = _recv(i)
-			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0):
-				_save(i, d['plaintext'])
-			
 		
 ####### === $ 變數定義區 $ === #######
 
@@ -300,6 +289,35 @@ def main():
 		if output == True: output_ans2()
 		return time_test
 	
+	def run_three(times):
+		key = gen_key()
+		
+		#@ 測量時間 - 開始
+		time_start = time.time()
+		for i in range(times):
+			WSN_MAC_test(key)
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_MAC_test_no_encrypted'] = (time_end - time_start)
+		
+		#@ 測量時間 - 開始
+		time_start = time.time()
+		for i in range(times):
+			WSN_MAC_test(key, 'XOR')
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_MAC_test_XOR'] = (time_end - time_start)
+		
+		#@ 測量時間 - 開始
+		time_start = time.time()
+		for i in range(times):
+			WSN_MAC_test(key, 'AES')
+		#@ 測量時間 - 結束
+		time_end = time.time()
+		time_test['WSN_MAC_test_AES'] = (time_end - time_start)
+
+		return time_test
+	
 	def output_ans1():
 		# 輸出結果
 		print '=' * 80
@@ -326,11 +344,11 @@ def main():
 		print '每日定期蒐集生理資訊（AES） - 花費時間：%f 秒' % time_test['WSN_daily_process_AES']
 
 	def run():
-		floor_n = input("請輸入醫療大樓有多少樓層，例如 10：")
+		floor_n = input("請輸入醫療大樓有多少樓層，例如 20：")
 		key_max = input("請輸入產生金鑰數上限，例如 6000：")
 		key_n = input("請輸入每回增加幾組金鑰，例如 1000：")
 		wsn_max = input("請輸入產生無線感測節點上限，例如 6000：")
-		wsn_n = input("請輸入每回增加多少台節點，例如 1000：")
+		wsn_n = input("請輸入每回增加多少台節點，例如 100：")
 		
 		print '請耐心等待，圖片產生中...'
 		
@@ -343,9 +361,14 @@ def main():
 		chart_data_y1 = list()
 		chart_data_x2 = list()
 		chart_data_y2 = list()
+		chart_data_x3 = list()
 		chart_data_y3_1 = list()
 		chart_data_y3_2 = list()
 		chart_data_y3_3 = list()
+		chart_data_x4 = list()
+		chart_data_y4_1 = list()
+		chart_data_y4_2 = list()
+		chart_data_y4_3 = list()
 		
 		# run_one
 		for i in range(1, max_run):
@@ -371,7 +394,6 @@ def main():
 		spacing = wsn_n
 		
 		# run_two
-		
 		for i in range(1, max_run):
 			print '-' * 80
 			print 'Run %d/%d' % (i, max_run-1)
@@ -382,12 +404,27 @@ def main():
 			chart_data_x2.append(x2)
 			chart_data_y2.append(y2)
 			
+			x3 = x2
 			y3_1 = ans['WSN_daily_process_no_encrypted']
 			y3_2 = ans['WSN_daily_process_XOR']
 			y3_3 = ans['WSN_daily_process_AES']
+			chart_data_x3.append(x3)
 			chart_data_y3_1.append(y3_1)
 			chart_data_y3_2.append(y3_2)
 			chart_data_y3_3.append(y3_3)	
+	
+		# run_three
+		max_run = wsn_max + 1
+		chart_data_x4 = list(range(1, max_run)) 
+		for i in range(1, max_run):
+			ans = run_three(i + 1)
+			y4_1 = ans['WSN_MAC_test_no_encrypted']
+			y4_2 = ans['WSN_MAC_test_XOR']
+			y4_3 = ans['WSN_MAC_test_AES']
+			chart_data_y4_1.append(y4_1)
+			chart_data_y4_2.append(y4_2)
+			chart_data_y4_3.append(y4_3)
+		
 	
 		#######
 	
@@ -418,13 +455,24 @@ def main():
 		
 		# 圖表 [每日定期蒐集生理資訊]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x2, chart_data_y3_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x2, chart_data_y3_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x2, chart_data_y3_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"初始金鑰數（個）")
+		plt.plot(chart_data_x3, chart_data_y3_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x3, chart_data_y3_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x3, chart_data_y3_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"無線感測節點（台）")
 		plt.ylabel(u"花費時間（秒）")
 		plt.title(u"「每日定期蒐集生理資訊」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y3_1 + chart_data_y3_2 + chart_data_y3_3) * 1.5)
+		plt.legend()
+		
+		# 圖表 [N筆資料加密效能比較]
+		plt.figure(figsize=(8,5))
+		plt.plot(chart_data_x4, chart_data_y4_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x4, chart_data_y4_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x4, chart_data_y4_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
+		plt.xlabel(u"無線感測節點（台）")
+		plt.ylabel(u"花費時間（秒）")
+		plt.title(u"「N筆資料加密效能比較」：無線感測節點數量與花費時間關係圖")
+		plt.ylim(0, max(chart_data_y4_1 + chart_data_y4_2 + chart_data_y4_3) * 1.5)
 		plt.legend()
 		
 		print '圖表產生完成！'
