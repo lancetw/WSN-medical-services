@@ -281,7 +281,7 @@ def main():
 		WSN_daily_collect_info_process()
 		#@ 測量時間 - 結束
 		time_end = time.time()
-		time_test['WSN_daily_process_no_decrypted'] = (time_end - time_start)
+		time_test['WSN_daily_process_no_encrypted'] = (time_end - time_start)
 
 		#@ 測量時間 - 開始
 		time_start = time.time()
@@ -321,7 +321,7 @@ def main():
 		#print 'PK[i][w] = H(SID[i] || FSinkID[w] || K_admin)'
 		print '病患入院無線感測節點配置階段 - 花費時間：%f 秒' % time_test['WSN_setup_phase']
 		print '-' * 80
-		print '每日定期蒐集生理資訊（無加密） - 花費時間：%f 秒' % time_test['WSN_daily_process_no_decrypted']
+		print '每日定期蒐集生理資訊（無加密） - 花費時間：%f 秒' % time_test['WSN_daily_process_no_encrypted']
 		print '每日定期蒐集生理資訊（XOR） - 花費時間：%f 秒' % time_test['WSN_daily_process_XOR']
 		print '每日定期蒐集生理資訊（AES） - 花費時間：%f 秒' % time_test['WSN_daily_process_AES']
 
@@ -382,7 +382,7 @@ def main():
 			chart_data_x2.append(x2)
 			chart_data_y2.append(y2)
 			
-			y3_1 = ans['WSN_daily_process_no_decrypted']
+			y3_1 = ans['WSN_daily_process_no_encrypted']
 			y3_2 = ans['WSN_daily_process_XOR']
 			y3_3 = ans['WSN_daily_process_AES']
 			chart_data_y3_1.append(y3_1)
