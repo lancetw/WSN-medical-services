@@ -195,9 +195,11 @@ def WSN_daily_collect_info_process(crypt_type=None):
 			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0 ):
 				_save(i, d)
 
-def WSN_MAC_test(SK, crypt_type=None):
+def WSN_MAC_test(i, SK, data, crypt_type=None):
 	Mp = 'MSG:PHYDATA_REQUEST TEST'
-	d = {'encrypted': MAC(SK, Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
+	M = data
+	a = {'encrypted': MAC(SK, Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
+	b = {'encrypted': MAC(SK, M, crypt_type, 'encrypt'), 'plaintext': M}
 	
 		
 ####### === $ 變數定義區 $ === #######
@@ -291,11 +293,12 @@ def main():
 	
 	def run_three(times):
 		key = gen_key()
-		
+		ecg_bin = open('s0028lre.xyz', 'rb').read()
+		phdata = {'id': SID[randrange_float(0, times+1, 1)], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': ecg_bin}
 		#@ 測量時間 - 開始
 		time_start = time.time()
 		for i in range(times):
-			WSN_MAC_test(key)
+			WSN_MAC_test(i, key, phdata)
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_MAC_test_no_encrypted'] = (time_end - time_start)
@@ -303,7 +306,7 @@ def main():
 		#@ 測量時間 - 開始
 		time_start = time.time()
 		for i in range(times):
-			WSN_MAC_test(key, 'XOR')
+			WSN_MAC_test(i, key, phdata, 'XOR')
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_MAC_test_XOR'] = (time_end - time_start)
@@ -311,7 +314,7 @@ def main():
 		#@ 測量時間 - 開始
 		time_start = time.time()
 		for i in range(times):
-			WSN_MAC_test(key, 'AES')
+			WSN_MAC_test(i, key, phdata, 'AES')
 		#@ 測量時間 - 結束
 		time_end = time.time()
 		time_test['WSN_MAC_test_AES'] = (time_end - time_start)
@@ -344,11 +347,11 @@ def main():
 		print '每日定期蒐集生理資訊（AES） - 花費時間：%f 秒' % time_test['WSN_daily_process_AES']
 
 	def run():
-		floor_n = input("請輸入醫療大樓有多少樓層，例如 20：")
-		key_max = input("請輸入產生金鑰數上限，例如 6000：")
-		key_n = input("請輸入每回增加幾組金鑰，例如 1000：")
+		floor_n = input("請輸入醫療大樓有多少樓層，例如 10：")
+		key_max = input("請輸入產生金鑰數上限，例如 3000：")
+		key_n = input("請輸入每回增加幾組金鑰，例如 500：")
 		wsn_max = input("請輸入產生無線感測節點上限，例如 3000：")
-		wsn_n = input("請輸入每回增加多少台節點，例如 100：")
+		wsn_n = input("請輸入每回增加多少台節點，例如 300：")
 		
 		print '請耐心等待，圖片產生中...'
 		
