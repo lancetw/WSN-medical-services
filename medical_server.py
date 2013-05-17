@@ -197,10 +197,11 @@ def WSN_daily_collect_info_process(crypt_type=None):
 
 def WSN_MAC_test(i, SK, data, crypt_type=None):
 	Mp = 'MSG:PHYDATA_REQUEST TEST'
-	M = data
+	M = str(data)
 	a = {'encrypted': MAC(SK, Mp, crypt_type, 'encrypt'), 'plaintext': Mp}
 	b = {'encrypted': MAC(SK, M, crypt_type, 'encrypt'), 'plaintext': M}
-	
+	c = cmp( MAC(SK, d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] )
+	d = cmp( MAC(SK, d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) 
 		
 ####### === $ 變數定義區 $ === #######
 
@@ -417,16 +418,16 @@ def main():
 			chart_data_y3_3.append(y3_3)	
 	
 		# run_three
-		max_run = wsn_max + 1
-		chart_data_x4 = list(range(1, max_run)) 
-		for i in range(1, max_run):
-			ans = run_three(i + 1)
-			y4_1 = ans['WSN_MAC_test_no_encrypted']
-			y4_2 = ans['WSN_MAC_test_XOR']
-			y4_3 = ans['WSN_MAC_test_AES']
-			chart_data_y4_1.append(y4_1)
-			chart_data_y4_2.append(y4_2)
-			chart_data_y4_3.append(y4_3)
+		#max_run = wsn_max + 1
+		#chart_data_x4 = list(range(1, max_run)) 
+		#for i in range(1, max_run):
+		#	ans = run_three(i + 1)
+		#	y4_1 = ans['WSN_MAC_test_no_encrypted']
+		#	y4_2 = ans['WSN_MAC_test_XOR']
+		#	y4_3 = ans['WSN_MAC_test_AES']
+		#	chart_data_y4_1.append(y4_1)
+		#	chart_data_y4_2.append(y4_2)
+		#	chart_data_y4_3.append(y4_3)
 		
 	
 		#######
@@ -468,15 +469,15 @@ def main():
 		plt.legend()
 		
 		# 圖表 [N筆資料加密效能比較]
-		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x4, chart_data_y4_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x4, chart_data_y4_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
-		plt.plot(chart_data_x4, chart_data_y4_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"無線感測節點（台）")
-		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「N筆資料加密效能比較」：無線感測節點數量與花費時間關係圖")
-		plt.ylim(0, max(chart_data_y4_1 + chart_data_y4_2 + chart_data_y4_3) * 1.5)
-		plt.legend()
+		#plt.figure(figsize=(8,5))
+		#plt.plot(chart_data_x4, chart_data_y4_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
+		#plt.plot(chart_data_x4, chart_data_y4_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
+		#plt.plot(chart_data_x4, chart_data_y4_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
+		#plt.xlabel(u"無線感測節點（台）")
+		#plt.ylabel(u"花費時間（秒）")
+		#plt.title(u"「N筆資料加密效能比較」：無線感測節點數量與花費時間關係圖")
+		#plt.ylim(0, max(chart_data_y4_1 + chart_data_y4_2 + chart_data_y4_3) * 1.5)
+		#plt.legend()
 		
 		print '圖表產生完成！'
 		# 顯示所有圖表

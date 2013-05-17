@@ -33,5 +33,3 @@ PyCrypto (Windows)
 ![](http://i.imgur.com/JnjoFwb.png)
 
 ![](http://i.imgur.com/eTIQLfB.png)
-
-![](http://i.imgur.com/55UZqOr.png)
