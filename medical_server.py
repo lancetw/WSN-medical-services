@@ -174,10 +174,6 @@ def gen_phinfo_M():
 
 # phinfo_list: 輸入生理資訊列表
 def WSN_daily_collect_info_process(crypt_type=None):
-	DATABASE = list()
-	
-	def _save(i, data):
-		DATABASE.insert(i, data)
 
 	# 樓層匯聚節點開始要求各節點回報生理資訊
 	for w in range(n['floors']):
@@ -193,7 +189,7 @@ def WSN_daily_collect_info_process(crypt_type=None):
 				print 'Error %s at %d(%d),%d(%d)' % (crypt_type, w+1, n['floors'], i+1, n['wsns'][w])
 
 			if ( cmp( MAC(_SKx[i], d['encrypted'], crypt_type, 'decrypt'), d['plaintext'] ) == 0 ):
-				_save(i, d)
+				pass
 
 def WSN_MAC_test(i, SK, data, crypt_type=None):
 	Mp = 'MSG:PHYDATA_REQUEST TEST'

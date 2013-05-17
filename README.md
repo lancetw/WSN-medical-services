@@ -22,14 +22,15 @@ PyCrypto (Windows)
 
 
 ### 測試資料：
-	目標金鑰數上限 6000
-	每回產生幾組金鑰 1200
-	醫療大樓樓層總數 15
-	無線感測節點總數 1000
+	醫療大樓樓層總數 10
+	產生金鑰數上限 3000
+	每回增加幾組金鑰 500
+	產生無線感測節點上限 3000
+	請輸入每回增加多少台節點 300
 
 
-![](http://i.imgur.com/wovSLhr.png)
+![](http://i.imgur.com/3qUUab2.png)
 
-![](http://i.imgur.com/JnjoFwb.png)
+![](http://i.imgur.com/7N0YhDo.png)
 
-![](http://i.imgur.com/eTIQLfB.png)
+![](http://i.imgur.com/rGIU77H.png)
