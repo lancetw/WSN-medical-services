@@ -29,8 +29,8 @@ PyCrypto (Windows)
 	請輸入每回增加多少台節點 300
 
 
-![](http://i.imgur.com/3qUUab2.png)
+![](http://i.imgur.com/EzxtQoC.png)
 
-![](http://i.imgur.com/7N0YhDo.png)
+![](http://i.imgur.com/dhttncX.png)
 
-![](http://i.imgur.com/rGIU77H.png)
+![](http://i.imgur.com/1Uublrk.png)
