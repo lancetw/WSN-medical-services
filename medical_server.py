@@ -288,36 +288,6 @@ def main():
 		if output == True: output_ans2()
 		return time_test
 
-	def run_three(times):
-		key = gen_key()
-		ecg_bin = open('s0028lre.xyz', 'rb').read()
-		phdata = {'id': SID[randrange_float(0, times+1, 1)], 'p': randrange_float(40, 200, 1), 'bp': randrange_float(60, 250, 0.1), 'bt': randrange_float(36, 45, 0.1), 'ecg': ecg_bin}
-		#@ 測量時間 - 開始
-		time_start = time.time()
-		for i in range(times):
-			WSN_MAC_test(i, key, phdata)
-		#@ 測量時間 - 結束
-		time_end = time.time()
-		time_test['WSN_MAC_test_no_encrypted'] = (time_end - time_start)
-
-		#@ 測量時間 - 開始
-		time_start = time.time()
-		for i in range(times):
-			WSN_MAC_test(i, key, phdata, 'XOR')
-		#@ 測量時間 - 結束
-		time_end = time.time()
-		time_test['WSN_MAC_test_XOR'] = (time_end - time_start)
-
-		#@ 測量時間 - 開始
-		time_start = time.time()
-		for i in range(times):
-			WSN_MAC_test(i, key, phdata, 'AES')
-		#@ 測量時間 - 結束
-		time_end = time.time()
-		time_test['WSN_MAC_test_AES'] = (time_end - time_start)
-
-		return time_test
-
 	def output_ans1():
 		# 輸出結果
 		print '=' * 80
@@ -413,20 +383,9 @@ def main():
 			chart_data_y3_2.append(y3_2)
 			chart_data_y3_3.append(y3_3)
 
-		# run_three
-		#max_run = wsn_max + 1
-		#chart_data_x4 = list(range(1, max_run))
-		#for i in range(1, max_run):
-		#	ans = run_three(i + 1)
-		#	y4_1 = ans['WSN_MAC_test_no_encrypted']
-		#	y4_2 = ans['WSN_MAC_test_XOR']
-		#	y4_3 = ans['WSN_MAC_test_AES']
-		#	chart_data_y4_1.append(y4_1)
-		#	chart_data_y4_2.append(y4_2)
-		#	chart_data_y4_3.append(y4_3)
-
-
 		#######
+
+		print '畫圖表'
 
 		# 畫圖表
 		import numpy as np
@@ -443,6 +402,7 @@ def main():
 		plt.title(u"「金鑰伺服器產生金鑰階段」：初始金鑰數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y1) * 1.5)
 		plt.legend()
+		plt.savefig('pic1.png')
 
 		# 圖表 [病患入院無線感測節點配置階段]
 		plt.figure(figsize=(8,5))
@@ -452,6 +412,7 @@ def main():
 		plt.title(u"「病患入院無線感測節點配置階段」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y2) * 1.5)
 		plt.legend()
+		plt.savefig('pic2.png')
 
 		# 圖表 [每日定期蒐集生理資訊]
 		plt.figure(figsize=(8,5))
@@ -463,17 +424,8 @@ def main():
 		plt.title(u"「每日定期蒐集生理資訊」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y3_1 + chart_data_y3_2 + chart_data_y3_3) * 1.5)
 		plt.legend()
+		plt.savefig('pic3.png')
 
-		# 圖表 [N筆資料加密效能比較]
-		#plt.figure(figsize=(8,5))
-		#plt.plot(chart_data_x4, chart_data_y4_1, label=u"Performance（無加密）", color="red", linewidth=2, marker='o', linestyle='-')
-		#plt.plot(chart_data_x4, chart_data_y4_2, label=u"Performance（XOR）", color="blue", linewidth=2, marker='o', linestyle='-')
-		#plt.plot(chart_data_x4, chart_data_y4_3, label=u"Performance（AES）", color="green", linewidth=2, marker='o', linestyle='-')
-		#plt.xlabel(u"無線感測節點（台）")
-		#plt.ylabel(u"花費時間（秒）")
-		#plt.title(u"「N筆資料加密效能比較」：無線感測節點數量與花費時間關係圖")
-		#plt.ylim(0, max(chart_data_y4_1 + chart_data_y4_2 + chart_data_y4_3) * 1.5)
-		#plt.legend()
 
 		print '圖表產生完成！'
 		# 顯示所有圖表
