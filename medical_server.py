@@ -29,20 +29,20 @@ BS = AES.block_size
 pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
 unpad = lambda s : s[0:-ord(s[-1])]
 class AESCipher:
-    def __init__(self, key):
-        self.key = key
+	def __init__(self, key):
+		self.key = key
 
-    def encrypt(self, raw):
-        raw = pad(raw)
-        iv = Random.new().read( AES.block_size )
-        cipher = AES.new( self.key, AES.MODE_CBC, iv )
-        return base64.b64encode( iv + cipher.encrypt( raw ) )
+	def encrypt(self, raw):
+		raw = pad(raw)
+		iv = Random.new().read( AES.block_size )
+		cipher = AES.new( self.key, AES.MODE_CBC, iv )
+		return base64.b64encode( iv + cipher.encrypt( raw ) )
 
-    def decrypt(self, enc):
-        enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]
-        cipher = AES.new(self.key, AES.MODE_CBC, iv )
-        return unpad(cipher.decrypt( enc[AES.block_size:] ))
+	def decrypt(self, enc):
+		enc = base64.b64decode(enc)
+		iv = enc[:AES.block_size]
+		cipher = AES.new(self.key, AES.MODE_CBC, iv )
+		return unpad(cipher.decrypt( enc[AES.block_size:] ))
 
 # 通用金鑰產生器
 def gen_key():
@@ -67,10 +67,7 @@ def MAC(key, msg, crypt_type=None, mode=None):
 
 # 產生裝置的 MAC address
 def gen_node_id():
-	mac = [ 0x00, 0x16, 0x3e,
-		random.randint(0x00, 0x7f),
-		random.randint(0x00, 0xff),
-		random.randint(0x00, 0xff) ]
+	mac = [ 0x00, 0x16, 0x3e,random.randint(0x00, 0x7f),random.randint(0x00, 0xff),random.randint(0x00, 0xff) ]
 	return ':'.join(map(lambda x: "%02x" % x, mac))
 
 # n: 隨機數數量, total: 隨機數的總和
@@ -80,7 +77,7 @@ def rand_num_list(n, total):
 
 # 一般隨機浮點數
 def randrange_float(start, stop, step):
-    return random.randint(0, int((stop - start) / step)) * step + start
+	return random.randint(0, int((stop - start) / step)) * step + start
 
 # 初始化系統變數
 def init_static(floors=None, keys=None, wsns_total=None):
@@ -156,7 +153,7 @@ def WSN_setup_phase():
 			_PK = H(SID[i] + FSinkID[w] + K_admin)
 			sub_PK.insert( i, _PK )
 			# 印出過程
-			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, str(_PK), SID[i], FSinkID[w], str(K_admin))
+			#print 'F%d: PK[%d][%d] = %s = H(%s || %s || %s)' % (w+1, i, w, str("_PK"), SID[i], FSinkID[w], str("K_admin"))
 		PKIW.insert( w, sub_PK )
 
 
@@ -246,6 +243,7 @@ def main():
 		time_test['WSN_gen_key_phase'] = (time_end - time_start)
 
 		if output == True: output_ans1()
+
 		return time_test
 
 	def run_two(floors=10, keys=3000, wsns_total=1000, output=False):
@@ -264,7 +262,7 @@ def main():
 		time_test['WSN_setup_phase'] = (time_end - time_start)
 
 		print 'WSN_daily_collect_info_process()'
-		#@ 測量時間 - 開始
+		##@ 測量時間 - 開始
 		time_start = time.time()
 		WSN_daily_collect_info_process()
 		#@ 測量時間 - 結束
@@ -286,6 +284,7 @@ def main():
 		time_test['WSN_daily_process_AES'] = (time_end - time_start)
 
 		if output == True: output_ans2()
+
 		return time_test
 
 	def output_ans1():
@@ -318,7 +317,7 @@ def main():
 		key_max = input("請輸入產生金鑰數上限，例如 3000：")
 		key_n = input("請輸入每回增加幾組金鑰，例如 500：")
 		wsn_max = input("請輸入產生無線感測節點上限，例如 3000：")
-		wsn_n = input("請輸入每回增加多少台節點，例如 300：")
+		wsn_n = input("請輸入每回增加多少台節點，例如 500：")
 
 		print '請耐心等待，圖片產生中...'
 
@@ -358,7 +357,7 @@ def main():
 
 		# 準備生理資料
 		print '#' * 80
-		print '#準備 %d 組生理資料 gen_phinfo_M()' % wsn_max
+		#print '#準備 %d 組生理資料 gen_phinfo_M()' % wsn_max
 		gen_phinfo_M()
 
 		# 跑幾次
@@ -385,7 +384,6 @@ def main():
 			chart_data_y3_1.append(y3_1)
 			chart_data_y3_2.append(y3_2)
 			chart_data_y3_3.append(y3_3)
-
 
 		chart_data_x2.insert(0, 0)
 		chart_data_y2.insert(0, 0)
