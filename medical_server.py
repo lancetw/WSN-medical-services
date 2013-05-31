@@ -226,7 +226,7 @@ SKx = list()
 # 生理資訊暫存
 M = list()
 # 系統管理員密鑰 (sha256)
-K_admin = sha256('live long and prosper').digest()
+K_admin = sha256('Live Long And Prosper').digest()
 
 ####### === $ 主程式 $ === #######
 
@@ -351,6 +351,9 @@ def main():
 			chart_data_x1.append(x1)
 			chart_data_y1.append(y1)
 
+		chart_data_x1.insert(0, 0);
+		chart_data_y1.insert(0, 0);
+
 		#######
 
 		# 準備生理資料
@@ -383,6 +386,15 @@ def main():
 			chart_data_y3_2.append(y3_2)
 			chart_data_y3_3.append(y3_3)
 
+
+		chart_data_x2.insert(0, 0)
+		chart_data_y2.insert(0, 0)
+
+		chart_data_x3.insert(0, 0)
+		chart_data_y3_1.insert(0, 0)
+		chart_data_y3_2.insert(0, 0)
+		chart_data_y3_3.insert(0, 0)
+
 		#######
 
 		print '畫圖表'
@@ -392,14 +404,14 @@ def main():
 		import matplotlib.pyplot as plt
 		from matplotlib import rcParams
 		# 微軟正黑體
-		rcParams['font.family'] = 'Microsoft JhengHei'
+		rcParams['font.family'] = 'Times New Roman'
 
 		# 圖表 [金鑰伺服器產生金鑰階段]
 		plt.figure(figsize=(8,5))
 		plt.plot(chart_data_x1, chart_data_y1, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"初始金鑰數（個）")
-		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「金鑰伺服器產生金鑰階段」：初始金鑰數量與花費時間關係圖")
+		plt.xlabel(u"Initial number of key")
+		plt.ylabel(u"Time")
+		#plt.title(u"「金鑰伺服器產生金鑰階段」：初始金鑰數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y1) * 1.5)
 		plt.legend()
 		plt.savefig('pic1.png')
@@ -407,21 +419,21 @@ def main():
 		# 圖表 [病患入院無線感測節點配置階段]
 		plt.figure(figsize=(8,5))
 		plt.plot(chart_data_x2, chart_data_y2, label=u"Performance", color="red", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"無線感測節點數（台）")
-		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「病患入院無線感測節點配置階段」：無線感測節點數量與花費時間關係圖")
+		plt.xlabel(u"Nodes")
+		plt.ylabel(u"Time")
+		#plt.title(u"「病患入院無線感測節點配置階段」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y2) * 1.5)
 		plt.legend()
 		plt.savefig('pic2.png')
 
 		# 圖表 [每日定期蒐集生理資訊]
 		plt.figure(figsize=(8,5))
-		plt.plot(chart_data_x3, chart_data_y3_1, label=u"無加密", color="red", linewidth=2, marker='o', linestyle='-')
+		plt.plot(chart_data_x3, chart_data_y3_1, label=u"Without encryption", color="red", linewidth=2, marker='o', linestyle='-')
 		plt.plot(chart_data_x3, chart_data_y3_2, label=u"XOR", color="blue", linewidth=2, marker='o', linestyle='-')
 		plt.plot(chart_data_x3, chart_data_y3_3, label=u"AES", color="green", linewidth=2, marker='o', linestyle='-')
-		plt.xlabel(u"無線感測節點（台）")
-		plt.ylabel(u"花費時間（秒）")
-		plt.title(u"「每日定期蒐集生理資訊」：無線感測節點數量與花費時間關係圖")
+		plt.xlabel(u"Nodes")
+		plt.ylabel(u"Time")
+		#plt.title(u"「每日定期蒐集生理資訊」：無線感測節點數量與花費時間關係圖")
 		plt.ylim(0, max(chart_data_y3_1 + chart_data_y3_2 + chart_data_y3_3) * 1.5)
 		plt.legend()
 		plt.savefig('pic3.png')
