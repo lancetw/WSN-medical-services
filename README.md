@@ -26,11 +26,11 @@ PyCrypto (Windows)
 	產生金鑰數上限 3000
 	每回增加幾組金鑰 500
 	產生無線感測節點上限 3000
-	請輸入每回增加多少台節點 300
+	請輸入每回增加多少台節點 500
 
 
-![](http://i.imgur.com/EzxtQoC.png)
+![](http://i.imgur.com/nuK2t98.png)
 
-![](http://i.imgur.com/dhttncX.png)
+![](http://i.imgur.com/HJO1mZS.png)
 
-![](http://i.imgur.com/1Uublrk.png)
+![](http://i.imgur.com/Yg8olgD.png)
